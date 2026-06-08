@@ -540,10 +540,10 @@ footer {
         </div>
       </div>
       <div class="quick-pills" id="quick-pills">
-        <button class="quick-pill" onclick="sendQ('Je suis en prise de masse')">💪 Prise de masse</button>
-        <button class="quick-pill" onclick="sendQ('Je suis en phase de sèche')">🔥 Sèche</button>
-        <button class="quick-pill" onclick="sendQ('Je veux plus d\'énergie pour mes entraînements')">⚡ Plus d'énergie</button>
-        <button class="quick-pill" onclick="sendQ('Que manger après une séance ?')">🍳 Après séance</button>
+        <button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="Je suis en prise de masse">💪 Prise de masse</button>
+        <button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="Je suis en phase de sèche">🔥 Sèche</button>
+        <button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="Je veux plus d'énergie pour mes entraînements">⚡ Plus d'énergie</button>
+        <button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="Que manger après une séance ?">🍳 Après séance</button>
       </div>
       <div class="chat-input-row">
         <input type="text" id="chat-input" placeholder="Écris un message..." />
@@ -676,7 +676,7 @@ function updatePills(userMsg) {
       {label:'💤 Récupération', msg:'Quels aliments aident à mieux récupérer après l\'effort ?'},
     ];
   }
-  pills.innerHTML = btns.map(b => `<button class="quick-pill" onclick="sendQ('${b.msg}')">${b.label}</button>`).join('');
+  pills.innerHTML = btns.map(b => `<button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="${b.msg.replace(/"/g,'&quot;')}">${b.label}</button>`).join('');
 }
 
 async function callAPI(userMsg) {
