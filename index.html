@@ -546,7 +546,11 @@ footer {
         <button class="quick-pill" onclick="sendQ(this.dataset.msg)" data-msg="Que manger après une séance ?">🍳 Après séance</button>
       </div>
       <div class="chat-input-row">
-        <input type="text" id="chat-input" placeholder="Écris un message..." />
+        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="sendPhoto(this)" />
+        <button id="photo-btn" onclick="document.getElementById('photo-input').click()" title="Photo du frigo" style="width:38px;height:38px;border-radius:50%;background:rgba(29,158,117,0.15);border:1px solid rgba(29,158,117,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1D9E75" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="text" id="chat-input" placeholder="Écris ou envoie une photo de ton frigo 📸" />
         <button id="chat-send" onclick="sendMsg()">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L22 2L14 22L11 13L2 12Z"/></svg>
         </button>
@@ -686,7 +690,7 @@ async function callAPI(userMsg) {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, system:systemPrompt, messages:history})
+      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:1000, system:systemPrompt, messages:history})
     });
     const data = await res.json();
     const reply = data.content?.[0]?.text || 'Désolé, une erreur est survenue.';
@@ -698,6 +702,44 @@ async function callAPI(userMsg) {
     removeTyping();
     addMsg('assistant', 'Oups, configure ta clé API pour activer la démo !');
   }
+}
+
+async function sendPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64 = e.target.result.split(',')[1];
+    const mediaType = file.type;
+    addMsg('user', '<img src="' + e.target.result + '" style="max-width:200px;border-radius:8px;" />');
+    showTyping();
+    const imageMsg = {
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+        { type: 'text', text: 'Voici une photo de mon frigo. Identifie les aliments que tu vois et propose-moi une recette adaptée à mon objectif sportif avec ces ingrédients.' }
+      ]
+    };
+    const messagesWithImage = [...history, imageMsg];
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, system:systemPrompt, messages:messagesWithImage})
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Désolé, une erreur est survenue.';
+      history.push(imageMsg);
+      history.push({role:'assistant', content:reply});
+      removeTyping();
+      addMsg('assistant', reply);
+    } catch(err) {
+      removeTyping();
+      addMsg('assistant', 'Erreur lors de l'analyse de la photo.');
+    }
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
 }
 
 function sendQ(text) {
